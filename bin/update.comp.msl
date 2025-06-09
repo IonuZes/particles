@@ -3,9 +3,14 @@
 
 using namespace metal;
 
-struct t_num_particles
+struct t_params
 {
-    uint u_num_particles;
+    float2 u_viewport;
+    float2 u_cursor;
+    uint u_particles;
+    float u_delta_time;
+    float u_force;
+    float u_resistance;
 };
 
 struct particle_t
@@ -25,37 +30,46 @@ struct t_particles
     particle_t_1 b_particles[1];
 };
 
-struct t_mouse_position
-{
-    float2 u_mouse_position;
-};
-
-struct t_force
-{
-    float u_force;
-};
-
-struct t_delta_time
-{
-    float u_delta_time;
-};
-
 constant uint3 gl_WorkGroupSize [[maybe_unused]] = uint3(64u, 1u, 1u);
 
-kernel void main0(constant t_delta_time& _72 [[buffer(0)]], constant t_num_particles& _19 [[buffer(1)]], constant t_mouse_position& _55 [[buffer(2)]], constant t_force& _65 [[buffer(3)]], device t_particles& _39 [[buffer(4)]], uint3 gl_GlobalInvocationID [[thread_position_in_grid]])
+kernel void main0(constant t_params& _21 [[buffer(0)]], device t_particles& _39 [[buffer(1)]], uint3 gl_GlobalInvocationID [[thread_position_in_grid]])
 {
     uint id = gl_GlobalInvocationID.x;
-    if (id >= _19.u_num_particles)
+    if (id >= _21.u_particles)
     {
         return;
     }
     particle_t particle;
     particle.position = _39.b_particles[id].position;
     particle.velocity = _39.b_particles[id].velocity;
-    float2 direction = particle.position - _55.u_mouse_position;
-    float2 force = ((fast::normalize(direction) * _65.u_force) * _72.u_delta_time) / float2(fast::max(length(direction), 0.001000000047497451305389404296875));
+    float2 direction = particle.position - _21.u_cursor;
+    float falloff = fast::max(length(direction), 0.001000000047497451305389404296875);
+    float2 force = ((fast::normalize(direction) * _21.u_force) * _21.u_delta_time) / float2(falloff);
     particle.velocity += force;
     particle.position += particle.velocity;
+    particle.velocity *= (1.0 - _21.u_resistance);
+    if (particle.position.x < 0.0)
+    {
+        particle.velocity.x = abs(particle.velocity.x);
+    }
+    else
+    {
+        if (particle.position.x > _21.u_viewport.x)
+        {
+            particle.velocity.x = -abs(particle.velocity.x);
+        }
+    }
+    if (particle.position.y < 0.0)
+    {
+        particle.velocity.y = abs(particle.velocity.y);
+    }
+    else
+    {
+        if (particle.position.y > _21.u_viewport.y)
+        {
+            particle.velocity.y = -abs(particle.velocity.y);
+        }
+    }
     _39.b_particles[id].position = particle.position;
     _39.b_particles[id].velocity = particle.velocity;
 }

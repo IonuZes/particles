@@ -12,38 +12,50 @@ layout(set = 1, binding = 0) buffer t_particles
 {
     particle_t b_particles[];
 };
-layout(set = 2, binding = 0) uniform t_delta_time
+layout(set = 2, binding = 0) uniform t_params
 {
+    vec2 u_viewport;
+    vec2 u_cursor;
+    uint u_particles;
     float u_delta_time;
-};
-layout(set = 2, binding = 1) uniform t_num_particles
-{
-    uint u_num_particles;
-};
-layout(set = 2, binding = 2) uniform t_mouse_position
-{
-    vec2 u_mouse_position;
-};
-layout(set = 2, binding = 3) uniform t_force
-{
     float u_force;
+    float u_resistance;
 };
 
 void main()
 {
     const uint id = gl_GlobalInvocationID.x;
-    if (id >= u_num_particles)
+    if (id >= u_particles)
     {
         return;
     }
 
     particle_t particle = b_particles[id];
-
-    vec2 direction = particle.position - u_mouse_position;
-    vec2 force = normalize(direction) * u_force * u_delta_time / max(length(direction), 0.001f);
+    
+    vec2 direction = particle.position - u_cursor;
+    float falloff = max(length(direction), 0.001f);
+    vec2 force = normalize(direction) * u_force * u_delta_time / falloff;
     
     particle.velocity += force;
     particle.position += particle.velocity;
+    particle.velocity *= (1.0f - u_resistance);
+
+    if (particle.position.x < 0.0f)
+    {
+        particle.velocity.x = abs(particle.velocity.x);
+    }
+    else if (particle.position.x > u_viewport.x)
+    {
+        particle.velocity.x = -abs(particle.velocity.x);
+    }
+    if (particle.position.y < 0.0f)
+    {
+        particle.velocity.y = abs(particle.velocity.y);
+    }
+    else if (particle.position.y > u_viewport.y)
+    {
+        particle.velocity.y = -abs(particle.velocity.y);
+    }
 
     b_particles[id] = particle;
 }

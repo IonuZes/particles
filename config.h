@@ -1,5 +1,7 @@
 #pragma once
 
-#define WINDOW_WIDTH 960
-#define WINDOW_HEIGHT 720
-#define PARTICLES 10000
+#define PARTICLES 10000000
+#define WIDTH 960
+#define HEIGHT 720
+#define FORCE 1000.0f
+#define RESISTANCE 0.01f

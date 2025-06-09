@@ -3,14 +3,9 @@
 
 using namespace metal;
 
-struct t_width
+struct t_params
 {
-    uint u_width;
-};
-
-struct t_height
-{
-    uint u_height;
+    float2 u_viewport;
 };
 
 struct main0_out
@@ -26,11 +21,11 @@ struct main0_in
     float2 i_velocity [[attribute(1)]];
 };
 
-vertex main0_out main0(main0_in in [[stage_in]], constant t_width& _25 [[buffer(0)]], constant t_height& _41 [[buffer(1)]])
+vertex main0_out main0(main0_in in [[stage_in]], constant t_params& _25 [[buffer(0)]])
 {
     main0_out out = {};
-    out.gl_Position.x = ((in.i_position.x / float(_25.u_width)) * 2.0) - 1.0;
-    out.gl_Position.y = ((in.i_position.y / float(_41.u_height)) * 2.0) - 1.0;
+    out.gl_Position.x = ((in.i_position.x / _25.u_viewport.x) * 2.0) - 1.0;
+    out.gl_Position.y = ((in.i_position.y / _25.u_viewport.y) * 2.0) - 1.0;
     out.gl_Position.z = 0.0;
     out.gl_Position.w = 1.0;
     out.o_velocity = in.i_velocity;

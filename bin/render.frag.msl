@@ -1,17 +1,73 @@
+#pragma clang diagnostic ignored "-Wmissing-prototypes"
+
 #include <metal_stdlib>
 #include <simd/simd.h>
 
 using namespace metal;
+
+// Implementation of the GLSL mod() function, which is slightly different than Metal fmod()
+template<typename Tx, typename Ty>
+inline Tx mod(Tx x, Ty y)
+{
+    return x - y * floor(x / y);
+}
 
 struct main0_out
 {
     float4 o_color [[color(0)]];
 };
 
-fragment main0_out main0()
+struct main0_in
+{
+    float2 o_velocity [[user(locn0)]];
+};
+
+fragment main0_out main0(main0_in in [[stage_in]])
 {
     main0_out out = {};
-    out.o_color = float4(1.0);
+    float speed = fast::clamp(length(in.o_velocity) / 2.0, 0.0, 1.0);
+    float hue = speed * 360.0;
+    float c = 1.0;
+    float x = c * (1.0 - abs(mod(hue / 60.0, 2.0) - 1.0));
+    float m = 0.0;
+    float3 rgb;
+    if (hue < 60.0)
+    {
+        rgb = float3(c, x, 0.0);
+    }
+    else
+    {
+        if (hue < 120.0)
+        {
+            rgb = float3(x, c, 0.0);
+        }
+        else
+        {
+            if (hue < 180.0)
+            {
+                rgb = float3(0.0, c, x);
+            }
+            else
+            {
+                if (hue < 240.0)
+                {
+                    rgb = float3(0.0, x, c);
+                }
+                else
+                {
+                    if (hue < 300.0)
+                    {
+                        rgb = float3(x, 0.0, c);
+                    }
+                    else
+                    {
+                        rgb = float3(c, 0.0, x);
+                    }
+                }
+            }
+        }
+    }
+    out.o_color = float4(rgb + float3(m), 1.0 - (speed * 0.800000011920928955078125));
     return out;
 }
 

@@ -1,6 +1,9 @@
 # Particles
 
-Just some GPU accelerated particles to test out [SDL_shadercross](https://github.com/libsdl-org/SDL_shadercross)
+![](image1.png)
+![](image2.png)
+
+Testing out [SDL_shadercross](https://github.com/libsdl-org/SDL_shadercross) on some GPU accelerated particles
 
 ### Building
 
@@ -38,4 +41,10 @@ cd bin
 
 #### MacOS
 
-I have no idea. But it should work!
+I have no idea, but it should work!
+
+#### Controls
+
+- `Space` to change shader backends
+- `LClick` to push particles
+- `RClick` to pull particles
