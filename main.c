@@ -16,8 +16,22 @@ typedef struct
 }
 shader_format_t;
 
+typedef struct
+{
+    struct
+    {
+        float x;
+        float y;
+    }
+    position, velocity;
+}
+particle_t;
+
 static SDL_Window* window;
 static SDL_GPUDevice* device;
+
+static SDL_GPUGraphicsPipeline* render_pipeline;
+static SDL_GPUComputePipeline* update_pipeline;
 
 static const shader_format_t shader_formats[3] =
 {{
@@ -63,12 +77,75 @@ static void init()
         return;
     }
 
+    SDL_GPUShader* render_frag_shader = load_shader(device, "render.frag");
+    SDL_GPUShader* render_vert_shader = load_shader(device, "render.vert");
+    update_pipeline = load_compute_pipeline(device, "update.comp");
+    if (!render_frag_shader || !render_vert_shader || !update_pipeline)
+    {
+        SDL_Log("Failed to load shader(s)");
+        return;
+    }
+
+    render_pipeline = SDL_CreateGPUGraphicsPipeline(device, &(SDL_GPUGraphicsPipelineCreateInfo)
+    {
+        .fragment_shader = render_frag_shader,
+        .vertex_shader = render_vert_shader,
+        .target_info = 
+        {
+            .num_color_targets = 1,
+            .color_target_descriptions = (SDL_GPUColorTargetDescription[])
+            {{
+                .format = SDL_GetGPUSwapchainTextureFormat(device, window),
+            }},
+        },
+        .vertex_input_state =
+        {
+            .num_vertex_buffers = 1,
+            .vertex_buffer_descriptions = (SDL_GPUVertexBufferDescription[])
+            {{
+                .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
+                .instance_step_rate = 0,
+                .pitch = sizeof(particle_t),
+                .slot = 0,
+            }},
+            .num_vertex_attributes = 2,
+            .vertex_attributes = (SDL_GPUVertexAttribute[])
+            {{
+                .buffer_slot = 0,
+                .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
+                .location = 0,
+                .offset = offsetof(particle_t, position),
+            },
+            {
+                .buffer_slot = 0,
+                .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
+                .location = 1,
+                .offset = offsetof(particle_t, velocity),
+            }},
+        },
+        .primitive_type = SDL_GPU_PRIMITIVETYPE_POINTLIST,
+    });
+    if (!render_pipeline)
+    {
+        SDL_Log("Failed to create render pipeline: %s", SDL_GetError());
+        return;
+    }
+
+    SDL_ReleaseGPUShader(device, render_frag_shader);
+    SDL_ReleaseGPUShader(device, render_vert_shader);
+
     snprintf(title, sizeof(title), "particles [%s] [%s]", format->name, SDL_GetGPUDeviceDriver(device));
     SDL_SetWindowTitle(window, title);
 }
 
 static void quit()
 {
+    SDL_ReleaseGPUGraphicsPipeline(device, render_pipeline);
+    SDL_ReleaseGPUComputePipeline(device, update_pipeline);
+
+    render_pipeline = NULL;
+    update_pipeline = NULL;
+
     SDL_ReleaseWindowFromGPUDevice(device, window);
     SDL_DestroyGPUDevice(device);
 
