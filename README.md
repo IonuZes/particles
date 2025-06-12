@@ -45,6 +45,5 @@ I have no idea, but it should work!
 
 #### Controls
 
-- `Space` to change shader backends
-- `LClick` to push particles
-- `RClick` to pull particles
+- `Space` to toggle shader backends
+- `LClick/RClick` to manipulate particles
